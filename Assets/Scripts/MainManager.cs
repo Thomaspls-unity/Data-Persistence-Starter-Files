@@ -1,16 +1,21 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class MainManager : MonoBehaviour
 {
+    public static MainManager Instance {  get; private set; }
+    //public InputField PlayerNameInput;
+
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text HighScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -18,14 +23,27 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
-    
+
+    private void Awake()
+    {
+        SetSingleton();
+        DontDestroyOnLoad(gameObject);
+
+    }
+
     // Start is called before the first frame update
     void Start()
     {
+        InitiateBlocks();
+        UpdateHighScoreUI();
+    }
+
+    private void InitiateBlocks()
+    {
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -66,11 +84,44 @@ public class MainManager : MonoBehaviour
     {
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
+
+        UpdateHighScore();
+    }
+
+    void UpdateHighScore()
+    {
+        int storedHighScore = PlayerPrefs.GetInt("HighScore", 0);
+
+        if (m_Points > storedHighScore)
+        {
+            PlayerPrefs.SetInt("HighScore", m_Points);
+            PlayerPrefs.Save();
+            UpdateHighScoreUI(); // Update high score UI when the high score changes
+        }
+    }
+
+    void UpdateHighScoreUI()
+    {
+        // Update the high score UI
+        int storedHighScore = PlayerPrefs.GetInt("HighScore", 0);
+        HighScoreText.text = $"High Score: {storedHighScore}";
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        UpdateHighScoreUI();
+    }
+
+    private void SetSingleton()
+    {
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 }
